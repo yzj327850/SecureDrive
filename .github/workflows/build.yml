@@ -1,0 +1,126 @@
+name: Build SecureDrive
+
+on:
+  push:
+    branches: [ main, master, develop ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  # ==================== Windows ====================
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure CMake
+        run: |
+          mkdir build
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release -A x64
+
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SecureDrive-Windows
+          path: build/Release/SecureDrive.exe
+
+  # ==================== macOS ====================
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: |
+          brew install cmake
+
+      - name: Configure CMake
+        run: |
+          mkdir build
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release --parallel $(sysctl -n hw.ncpu)
+
+      - name: Fix Bundle & Sign
+        run: |
+          # 确保 .app 目录结构完整
+          ls -la build/
+          if [ -d "build/SecureDrive.app" ]; then
+            # 显示 app 内容
+            find build/SecureDrive.app -type f | head -30
+            # 打包为 zip 方便分发
+            cd build && zip -r SecureDrive-macOS.zip SecureDrive.app
+          fi
+
+      - name: Upload Artifact (App Bundle)
+        uses: actions/upload-artifact@v4
+        with:
+          name: SecureDrive-macOS
+          path: |
+            build/SecureDrive-macOS.zip
+            build/SecureDrive
+
+  # ==================== Linux ====================
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake g++ libgl1-mesa-dev xorg-dev
+
+      - name: Configure CMake
+        run: |
+          mkdir build
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release --parallel $(nproc)
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SecureDrive-Linux
+          path: build/SecureDrive
+
+  # ==================== Release ====================
+  release:
+    needs: [build-windows, build-macos, build-linux]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Prepare Release Assets
+        run: |
+          mkdir -p release
+          cp artifacts/SecureDrive-Windows/SecureDrive.exe release/SecureDrive-Windows.exe
+          cp artifacts/SecureDrive-Linux/SecureDrive release/SecureDrive-Linux
+          cp artifacts/SecureDrive-macOS/SecureDrive-macOS.zip release/SecureDrive-macOS.zip 2>/dev/null || true
+          cp artifacts/SecureDrive-macOS/SecureDrive release/SecureDrive-macOS-binary 2>/dev/null || true
+          ls -la release/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/*
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
