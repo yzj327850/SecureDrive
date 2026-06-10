@@ -101,8 +101,15 @@ jobs:
   release:
     needs: [build-windows, build-macos, build-linux]
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Download All Artifacts
         uses: actions/download-artifact@v4
         with:
@@ -117,10 +124,15 @@ jobs:
           cp artifacts/SecureDrive-macOS/SecureDrive release/SecureDrive-macOS-binary 2>/dev/null || true
           ls -la release/
 
+      - name: Generate Tag
+        run: |
+          TAG="v$(date +%Y.%m.%d)-$(git rev-parse --short HEAD)"
+          echo "TAG=$TAG" >> $GITHUB_ENV
+
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: release/*
-          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ env.TAG }}" release/* \
+            --generate-notes \
+            --title "Release ${{ env.TAG }}"
