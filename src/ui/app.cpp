@@ -309,7 +309,7 @@ void App::run() {
                 // ★ 后台线程执行，避免阻塞 UI 渲染
                 bg_task_done.store(false, std::memory_order_release);
                 ctx_.bg_task_type = "import";
-                bg_thread = std::thread([this, pending](){
+                bg_thread = std::make_unique<std::thread>([this, pending](){
                     do_import_paths(pending);
                     bg_task_done.store(true, std::memory_order_release);
                 });
@@ -672,7 +672,7 @@ void App::draw_unlock() {
     // 检查后台解锁是否完成
     if(unlock_running && unlock_done.load(std::memory_order_acquire)){
         unlock_running = false;
-        if(unlock_thread.joinable()) unlock_thread.join();
+        if(unlock_thread && unlock_thread->joinable()) unlock_thread->join();
 
         if(unlock_ok.load()){
             ctx_.lockout.reset();
@@ -768,7 +768,7 @@ void App::do_unlock(const std::string& password) {
     unlock_done.store(false, std::memory_order_release);
     unlock_ok.store(false, std::memory_order_release);
     unlock_running = true;
-    unlock_thread = std::thread([this, password](){
+    unlock_thread = std::make_unique<std::thread>([this, password](){
         fprintf(stderr, "[UNLOCK] 后台线程开始 Argon2id...\n"); fflush(stderr);
         unlock_ok.store(ctx_.volume.unlock(password), std::memory_order_release);
         fprintf(stderr, "[UNLOCK] Argon2id 完成, result=%d\n", unlock_ok.load());
@@ -892,8 +892,8 @@ void App::draw_file_manager() {
         }
         ImGui::Spacing();
         return;
-    } else if(bg_thread.joinable()){
-        bg_thread.join();
+    } else if(bg_thread && bg_thread->joinable()){
+        bg_thread->join();
         ctx_.bg_progress.store(-1.0f, std::memory_order_relaxed);
         ctx_.bg_progress_label.clear();
         ctx_.bg_task_type.clear();
@@ -1024,7 +1024,7 @@ void App::draw_file_manager() {
         if(!folder_path.empty()){
             bg_task_done.store(false, std::memory_order_release);
             ctx_.bg_task_type = "import";
-            bg_thread = std::thread([this, folder_path](){
+            bg_thread = std::make_unique<std::thread>([this, folder_path](){
                 ctx_.vfs.begin_batch();
                 do_import_folder(folder_path, ctx_.current_dir);
                 ctx_.vfs.end_batch();
@@ -1160,7 +1160,7 @@ void App::draw_file_manager() {
             // 启动后台任务
             bg_task_done.store(false, std::memory_order_release);
             std::string p = path;
-            bg_thread = std::thread([this, p](){
+            bg_thread = std::make_unique<std::thread>([this, p](){
                 bool ok = ctx_.vfs.make_dir(p);
                 bg_task_status   = ok ? ("文件夹已创建: " + p) : "创建失败";
                 bg_task_success  = ok;
@@ -1260,7 +1260,7 @@ void App::draw_file_manager() {
                 if(selected_paths.size() > 1){
                     bg_task_done.store(false, std::memory_order_release);
                     ctx_.bg_task_type = "import";
-                    bg_thread = std::thread([this, selected_paths](){
+                    bg_thread = std::make_unique<std::thread>([this, selected_paths](){
                         do_import_paths(selected_paths);
                         bg_task_done.store(true, std::memory_order_release);
                     });
@@ -1286,7 +1286,7 @@ void App::draw_file_manager() {
             // 启动后台任务
             bg_task_done.store(false, std::memory_order_release);
             ctx_.bg_task_type = "import";
-            bg_thread = std::thread([this, src, dst](){
+            bg_thread = std::make_unique<std::thread>([this, src, dst](){
                 do_import_file(src, dst);
                 bg_task_done.store(true, std::memory_order_release);
             });
@@ -1614,7 +1614,7 @@ void App::do_delete(const std::string& vfs_path, bool is_dir) {
     size_t last_slash = vfs_path.rfind('/');
     if(last_slash != std::string::npos) display_name = vfs_path.substr(last_slash + 1);
 
-    bg_thread = std::thread([this, vfs_path, is_dir, display_name](){
+    bg_thread = std::make_unique<std::thread>([this, vfs_path, is_dir, display_name](){
         if(!is_dir){
             // 单文件：无需 batch，直接删
             ctx_.bg_progress.store(0.5f, std::memory_order_relaxed);

@@ -8,6 +8,7 @@
 #include <functional>
 #include <atomic>
 #include <thread>
+#include <memory>
 #include <mutex>
 #include <queue>
 #include <unordered_set>
@@ -131,13 +132,13 @@ private:
     std::atomic<bool>      bg_task_done{true};
     std::atomic<bool>      bg_task_success{true};
     std::string            bg_task_status;
-    std::thread            bg_thread;
+    std::unique_ptr<std::thread> bg_thread;
 
     // 解锁后台状态
     std::atomic<bool>      unlock_running{false};
     std::atomic<bool>      unlock_done{false};
     std::atomic<bool>      unlock_ok{false};
-    std::thread            unlock_thread;
+    std::unique_ptr<std::thread> unlock_thread;
 
     // 拖拽队列（主线程 → 渲染帧处理）
     std::mutex                   drop_mutex_;
