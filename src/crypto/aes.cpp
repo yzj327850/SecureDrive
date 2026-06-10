@@ -26,11 +26,13 @@ static bool has_aes_ni() {
     int cpuInfo[4] = {};
     __cpuid(cpuInfo, 1);
     return (cpuInfo[2] & (1 << 25)) != 0;
+#elif defined(__x86_64__) || defined(__i386__)
+    unsigned int eax, ebx, ecx, edx;
+    __asm__ __volatile__("cpuid"
+                         : "=a"(eax), "=b"(ebx), "=c"(ecx), "=d"(edx)
+                         : "a"(1), "c"(0));
+    return (ecx & (1 << 25)) != 0;
 #else
-    #include <cpuid.h>
-    unsigned int eax=0, ebx=0, ecx=0, edx=0;
-    if(__get_cpuid(1, &eax, &ebx, &ecx, &edx))
-        return (ecx & (1 << 25)) != 0;
     return false;
 #endif
 #else
