@@ -1,8 +1,6 @@
 # SecureDrive — 便携式移动硬盘加密软件
 
-![Build](https://github.com/OWNER/REPO/actions/workflows/build.yml/badge.svg)
-
-> 请将 `OWNER/REPO` 替换为您的实际 GitHub 仓库路径。
+![Build](https://github.com/yzj327850/SecureDrive/actions/workflows/build.yml/badge.svg)
 
 SecureDrive 是一款完全自包含的移动硬盘加密软件，**不依赖任何外部加密工具**（如 VeraCrypt/BitLocker/LUKS），无需在目标电脑上安装任何驱动或软件。
 
