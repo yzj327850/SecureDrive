@@ -12,6 +12,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <memory>
 #ifdef _WIN32
 #include <windows.h>
 #include <shlobj.h>
@@ -40,8 +41,8 @@ static char wz_emerg2[256]   = {};
 static char wz_error[256]    = {};
 static bool wz_running       = false;
 static bool wz_success       = false;
-static std::atomic<bool> wz_thread_done{false};
-static std::thread       wz_thread;
+static std::atomic<bool> wz_thread_done;
+static std::unique_ptr<std::thread> wz_thread;
 static std::string       wz_progress_msg; // 进度说明
 
 // SEH/异常包装函数所需的 POD 参数
@@ -693,7 +694,7 @@ void App::draw_init_wizard() {
                         sizeof(g_init_params.linux_src) - 1);
                 g_init_params.linux_src[sizeof(g_init_params.linux_src)-1] = '\0';
                 // 在后台线程执行初始化
-                wz_thread = std::thread([](){
+                wz_thread = std::make_unique<std::thread>([](){
                     exception_wrapper(nullptr);
                 });
             }
@@ -712,7 +713,7 @@ void App::draw_init_wizard() {
         // 检测后台线程是否完成
         if(wz_thread_done.load(std::memory_order_acquire)){
             wz_thread_done.store(false, std::memory_order_relaxed);
-            if(wz_thread.joinable()) wz_thread.join();
+            if(wz_thread && wz_thread->joinable()) wz_thread->join();
             wz_step = WZ_DONE;
         }
         ImGui::SetCursorPosX(cx - 150);
