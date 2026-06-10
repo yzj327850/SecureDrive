@@ -575,6 +575,8 @@ bool copy_file_or_dir(const std::string& src, const std::string& dst) {
 #include <filesystem>
 #include <array>
 #include <memory>
+#include <thread>
+#include <chrono>
 
 // macOS does not have lseek64; lseek is already 64-bit on macOS & Linux 64-bit
 #ifdef __APPLE__

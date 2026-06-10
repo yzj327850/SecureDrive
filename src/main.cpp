@@ -15,6 +15,7 @@
        _NSGetExecutablePath(path,&sz); \
        return std::filesystem::path(path).parent_path().string(); }()
 #else
+#  include <unistd.h>
 #  define EXE_DIR() []{ char path[1024]; \
        ssize_t len = readlink("/proc/self/exe", path, sizeof(path)-1); \
        if(len > 0) path[len] = '\0'; else path[0] = '\0'; \
