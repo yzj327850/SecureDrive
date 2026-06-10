@@ -95,7 +95,12 @@ static bool aes256_known_answer_test() {
     bool dec_ok = (memcmp(dec_out, nist_pt, 16) == 0);
 
     fprintf(stderr, "[AES-256 KAT] use_aesni=%d  encrypt=%s  decrypt=%s\n",
-            (int)ctx.use_aesni, enc_ok?"OK":"FAIL", dec_ok?"OK":"FAIL");
+#if USE_AES_NI
+            (int)ctx.use_aesni,
+#else
+            0,
+#endif
+            enc_ok?"OK":"FAIL", dec_ok?"OK":"FAIL");
     if(!enc_ok) {
         fprintf(stderr, "[AES-256 KAT] encrypt expected: ");
         for(int i=0;i<16;i++) fprintf(stderr, "%02X", nist_ct[i]);
