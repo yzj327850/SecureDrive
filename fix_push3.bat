@@ -1,35 +1,15 @@
 @echo off
 chcp 65001 >nul
-title Fix Git Push - Final Attempt
+title Push to GitHub
 echo ==========================================
-echo   Fix GitHub Push Conflict
+echo   Push SecureDrive to GitHub
 echo ==========================================
 echo.
-
-echo [Step 1/3] Committing local helper scripts first...
-git add push_to_github.bat fix_push.bat fix_push2.bat fix_push3.bat
-git commit -m "Add helper scripts for GitHub push"
-echo   OK
+echo [Step 1/1] Pushing to GitHub...
+echo   Make sure your network is stable.
+echo   If you have VPN/proxy, turn it on now.
 echo.
 
-echo [Step 2/3] Pulling remote changes with unrelated histories...
-git pull origin main --allow-unrelated-histories
-if %errorlevel% neq 0 (
-    echo.
-    echo Pull failed. Trying again...
-    git pull origin main --allow-unrelated-histories
-    if %errorlevel% neq 0 (
-        echo.
-        echo ERROR: Unable to merge.
-        echo Please check network connection and retry.
-        pause
-        exit /b 1
-    )
-)
-echo   OK
-echo.
-
-echo [Step 3/3] Pushing to GitHub...
 git push -u origin main
 if %errorlevel% equ 0 (
     echo.
@@ -39,18 +19,31 @@ if %errorlevel% equ 0 (
     echo.
     echo Repository: https://github.com/yzj327850/SecureDrive
     echo.
+    echo Next steps:
+    echo   1. Open the link above to view your repo
+    echo   2. Click Actions tab to watch CI builds
+    echo   3. Tag a release: git tag v1.0.0 ^&^& git push origin v1.0.0
+    echo.
 ) else (
     echo.
     echo ==========================================
-    echo   Push Failed - Retrying...
+    echo   Push Failed - Retrying in 3 seconds...
     echo ==========================================
     echo.
+    timeout /t 3 /nobreak >nul
     git push -u origin main
     if %errorlevel% equ 0 (
+        echo.
         echo Retry successful!
         echo Repository: https://github.com/yzj327850/SecureDrive
+        echo.
     ) else (
-        echo Still failed. Please check network.
+        echo.
+        echo Still failed. Please:
+        echo   1. Check your internet connection
+        echo   2. Enable VPN/proxy if available
+        echo   3. Wait a minute and run this script again
+        echo.
     )
 )
 
