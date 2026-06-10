@@ -14,6 +14,9 @@
 #include <filesystem>
 #include <atomic>
 #include <thread>
+#ifndef _WIN32
+#include <unistd.h>
+#endif
 
 namespace fs = std::filesystem;
 

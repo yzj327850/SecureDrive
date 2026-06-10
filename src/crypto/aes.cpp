@@ -22,13 +22,17 @@
 
 static bool has_aes_ni() {
 #if USE_AES_NI
-    int cpuInfo[4] = {};
 #if defined(_MSC_VER)
+    int cpuInfo[4] = {};
     __cpuid(cpuInfo, 1);
+    return (cpuInfo[2] & (1 << 25)) != 0;
 #else
-    __cpuid(1, cpuInfo[0], cpuInfo[1], cpuInfo[2], cpuInfo[3]);
+    #include <cpuid.h>
+    unsigned int eax=0, ebx=0, ecx=0, edx=0;
+    if(__get_cpuid(1, &eax, &ebx, &ecx, &edx))
+        return (ecx & (1 << 25)) != 0;
+    return false;
 #endif
-    return (cpuInfo[2] & (1 << 25)) != 0; // AES bit in ECX
 #else
     return false;
 #endif

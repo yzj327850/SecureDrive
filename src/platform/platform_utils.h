@@ -9,6 +9,9 @@
 #include <array>
 #include <memory>
 #include <stdexcept>
+#ifndef _WIN32
+#include <unistd.h>
+#endif
 
 // ============================================================
 //  跨平台辅助函数

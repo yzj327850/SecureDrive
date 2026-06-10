@@ -146,6 +146,11 @@ else()  # Linux
     )
 endif()
 
+# Enable AES-NI intrinsics on x86_64 GCC/Clang
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64|amd64|i[3-6]86" AND NOT MSVC)
+    target_compile_options(SecureDrive PRIVATE -maes -msse4.1)
+endif()
+
 # ============================================================
 # Compile optimization
 # ============================================================
