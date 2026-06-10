@@ -576,6 +576,13 @@ bool copy_file_or_dir(const std::string& src, const std::string& dst) {
 #include <array>
 #include <memory>
 
+// macOS does not have lseek64; lseek is already 64-bit on macOS & Linux 64-bit
+#ifdef __APPLE__
+    #define SDRV_LSEEK lseek
+#else
+    #define SDRV_LSEEK lseek64
+#endif
+
 namespace fs = std::filesystem;
 
 #ifdef __APPLE__
@@ -642,7 +649,7 @@ void RawDisk::close() {
 
 bool RawDisk::read(uint64_t offset, void* buf, size_t size) {
     if(!is_open()) return false;
-    if(lseek64(handle_, (off_t)offset, SEEK_SET) < 0) return false;
+    if(SDRV_LSEEK(handle_, (off_t)offset, SEEK_SET) < 0) return false;
     size_t done = 0;
     while(done < size){
         ssize_t n = ::read(handle_, (char*)buf+done, size-done);
@@ -654,7 +661,7 @@ bool RawDisk::read(uint64_t offset, void* buf, size_t size) {
 
 bool RawDisk::write(uint64_t offset, const void* buf, size_t size) {
     if(!is_open()) return false;
-    if(lseek64(handle_, (off_t)offset, SEEK_SET) < 0) return false;
+    if(SDRV_LSEEK(handle_, (off_t)offset, SEEK_SET) < 0) return false;
     size_t done = 0;
     while(done < size){
         ssize_t n = ::write(handle_, (const char*)buf+done, size-done);
